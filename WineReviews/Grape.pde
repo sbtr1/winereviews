@@ -18,9 +18,11 @@ class Grape {
   //Methods 
   void drawGrape() {
     if (wineColour.equals("red")) {
-      fill(144,10,10);
+      fill(160,10,10);
+      //fill(178,34,34);
     } else {
-      fill(248,253,183);
+      fill(255,250,205);
+      //fill(255,255,150);
     }
     strokeWeight(0);
     ellipse(x,y,grapeSize,grapeSize);
@@ -29,7 +31,7 @@ class Grape {
     } else {
       fill(0);
     }
-    textFont(f1);
+    textFont(f3);
     textSize(11);
     textAlign(CENTER);
     text(name + "\n" + nf(n) +" reviews", x, y); 
@@ -42,10 +44,6 @@ class Grape {
     } else {
       return false;
     }
-  }
-  
-  String getGrapeName() {
-    return name;
   }
   
 }
