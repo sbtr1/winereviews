@@ -20,7 +20,7 @@ float minCount = MAX_FLOAT;
 float maxCount = MIN_FLOAT;
 float maxRelFreq = MIN_FLOAT;
 
-PFont f1, f2, f3;
+PFont f1, f2;
 
 // Set-up:
 void setup() {
@@ -28,9 +28,8 @@ void setup() {
   mapImage = loadImage("worldCountries.png");
   rightArrow = loadImage("rightarrow.png");
   leftArrow = loadImage("leftarrow.png");
-  f1 = createFont("Gotham Narrow Bold.otf", 30); //Headers 
-  f2 = createFont("Gotham Narrow Book.otf", 24); //Instructions
-  f3 = createFont("Futura.ttc", 11.5); //Small text
+  f1 = loadFont("Futura-Medium-36.vlw"); //Headers
+  f2 = loadFont("Futura-Medium-12.vlw"); //Small text
   wineTable = loadTable("wine_clean.csv", "header,csv");
   latLongTable = loadTable("latlong.csv", "header,csv");
   wineWords = loadStrings("words.csv");
@@ -47,7 +46,6 @@ void draw() {
 }
 
 //Methods
-
 //Toggles background:
 void mouseClicked() {
   
@@ -81,22 +79,21 @@ void getMinMax() {
       maxRelFreq = max(maxRelFreq,wineTable.getFloat(i,j+19));   
     }  
   }
-
 }
 
 //Draws first background:
 void drawBackgroundOne() {
     background(18);
     cursor(ARROW);
-    fill(255);
+    fill(225);
     noStroke();
     textFont(f1);
     textAlign(CENTER);
-    text("Most Common Words in Wine Reviews by Variety", width/2, 30);
-    textFont(f3);
-    textSize(12);
+    text("Most Common Words in Wine Reviews by Variety", width/2, 35);
+    textFont(f2);
+    textSize(12.5);
     textAlign(RIGHT);
-    float ystart = 110; //move table up or down
+    float ystart = 115; //move table up or down
     float xstart = 200; //move table left or right
     
     for (int i=0; i < nGrapes; i++) {
@@ -112,16 +109,18 @@ void drawBackgroundOne() {
       
       for (int j=0; j < 40; j++) {
         float relFreq = wineTable.getFloat(i, j+19);
-        float pointSize = map(relFreq,0,maxRelFreq,0,55);
-        ellipse(j*27+xstart, 17*i+ystart, pointSize/2, pointSize/2);    
+        float pointSize = map(relFreq,0,maxRelFreq,0,200);
+        pointSize = pow(pointSize,0.6);
+        ellipse(j*27+xstart, 17*i+ystart, pointSize, pointSize);    
       }  
    }
    
    textAlign(LEFT);
    fill(200);
+   textSize(13.5);
    for (int j=0; j < 40; j++) {
      pushMatrix();
-     translate(j*27+xstart+3, ystart-20);
+     translate(j*27+xstart+3, ystart-15);
      rotate(0.7-HALF_PI);
      text(wineWords[j+1], 0, 0);
      popMatrix(); 
@@ -133,89 +132,19 @@ void drawBackgroundOne() {
 
 //Draws second background:
 void drawBackgroundTwo() {
-    float minPrice = 10;
-    float maxPrice = 75;
-    float minPoints = 85.5;
-    float maxPoints = 91;    
-    float plotX1 = width/2+110;
-    float plotX2 = width-40;
-    float plotY1 = height/2+10;
-    float plotY2 = height-90;
-    int[] xlabels = {10, 20, 30, 40, 50, 60, 70};
-    int[] ylabels = {86, 87, 88, 89, 90, 91};
-    
     background(18);
-    cursor(CROSS);
-    
+    cursor(CROSS);  
     image(leftArrow,20,height/2,50,50); 
-    textAlign(CENTER,CENTER);
-    fill(255);   
-    rectMode(CORNERS);
-    noStroke();
-    rect(plotX1, plotY1, plotX2, plotY2);
-    textFont(f3);
-    textSize(14);
-    fill(200);
-    text("Price", (plotX1+plotX2)/2, plotY2+30);
-    pushMatrix();
-    translate(plotX1-40, (plotY1+plotY2)/2);
-    rotate(-HALF_PI);
-    text("Rating", 0,0);
-    popMatrix(); 
-    textSize(12);
-    
-    //Draws base plot with labels:
-    stroke(200);
-    strokeWeight(1);
-    for (int i=0; i<7; i++) {
-      float xPos = map(xlabels[i], minPrice, maxPrice, plotX1, plotX2);
-      text(xlabels[i], xPos, plotY2+15);
-      line(xPos, plotY2, xPos, plotY2+3);
-    }
-    for (int i=0; i<6; i++) {
-      float yPos = map(ylabels[i], minPoints, maxPoints, plotY2, plotY1);
-      text(ylabels[i], plotX1-15, yPos);
-      line(plotX1-3, yPos, plotX1, yPos);
-    }
-    
-    noStroke();
-    for (int i=0; i < nGrapes; i++) {
-      float winePoints = wineTable.getFloat(i, "points");
-      float winePrice = wineTable.getFloat(i, "price");
-      float pointX = map(winePrice, minPrice, maxPrice, plotX1, plotX2);
-      float pointY = map(winePoints, minPoints, maxPoints, plotY2, plotY1);
-      ellipse(pointX, pointY, 7, 7);
-    }
-    
-    //Draws text and coloured points:
-    if (currentGrape == null) {
-      fill(200);
-      textFont(f1);
-      text("Click on a grape to learn more!", width/2, 40);
-    } else {
-      if (currentColour.equals("red")) {
-        fill(178,34,34);
-      } else {
-        stroke(0);
-        strokeWeight(1);
-        fill(255,255,150);
-      }
-      float currentPoints = wineTable.getFloat(currentNumber, "points");
-      float currentPrice = wineTable.getFloat(currentNumber, "price");
-      float currentX = map(currentPrice, minPrice, maxPrice, plotX1, plotX2);
-      float currentY = map(currentPoints, minPoints, maxPoints, plotY2, plotY1);
-      ellipse(currentX, currentY, 15, 15);  
-      noStroke();
-      textFont(f1);
-      text("You've selected " + currentGrape.toUpperCase() + ":", width/2, 40);
-      fill(200);
-      textFont(f2);
-      text("Choose another grape or click the left arrow to return.", width*0.3, plotY2+60);
-      text("Average Rating: " + nf(grapePoints, 2, 1) + "    Average Price: $" + nf(grapePrice, 2, 1), 0.77*width, plotY2+60);
-    }
     drawNavigationBar();
-    drawMap();
-    
+    if (currentGrape == null) {
+      fill(225);
+      textFont(f1);
+      textAlign(CENTER,CENTER);
+      text("Click on a grape to learn more!", width/2, 35);
+    } else {
+      drawScatterPlot();
+      drawMap();
+    }
 }
 
 void drawNavigationBar() {
@@ -246,26 +175,96 @@ void drawMap() {
         fill(255,255,150,80);
         stroke(0);
         strokeWeight(0.5);
-    }
-    
+    }    
     float maxCountry = MIN_FLOAT;
     for (int j=4; j < 16; j++) {
         maxCountry = max(maxCountry,wineTable.getFloat(currentNumber,j));   
-    }  
-    
+    }     
     for (int k=0; k < 12; k++) {
       float wineCount = wineTable.getFloat(currentNumber, k+4);
-      float circleSize = map(wineCount,0,maxCountry,0,25);
+      float circleSize = map(wineCount,0,maxCountry,0,200);
+      circleSize = pow(circleSize,0.6);
       float latitude = latLongTable.getFloat(k, "latitude");
       float longitude = latLongTable.getFloat(k, "longitude");
       float x = map(longitude, -180, 180, width/2+110, width/2+660);
       float y = map(latitude, -60, 85, 380, 80);
       ellipse(x, y, circleSize, circleSize);
+    } 
+    fill(225);
+    textFont(f1);
+    textSize(20);
+    text("Country of Origin", width*0.78, height*0.5-15);
+  }
+}
+
+void drawScatterPlot() {
+    float minPrice = 10;
+    float maxPrice = 75;
+    float minPoints = 85.5;
+    float maxPoints = 91;    
+    float plotX1 = width/2+110;
+    float plotX2 = width-40;
+    float plotY1 = height/2+10;
+    float plotY2 = height-90;
+    int[] xlabels = {10, 20, 30, 40, 50, 60, 70};
+    int[] ylabels = {86, 87, 88, 89, 90, 91};
+  
+    textAlign(CENTER,CENTER);
+    fill(255);   
+    rectMode(CORNERS);
+    noStroke();
+    rect(plotX1, plotY1, plotX2, plotY2);
+    textFont(f2);
+    textSize(14);
+    fill(200);
+    text("Price", (plotX1+plotX2)/2, plotY2+30);
+    pushMatrix();
+    translate(plotX1-40, (plotY1+plotY2)/2);
+    rotate(-HALF_PI);
+    text("Rating", 0,0);
+    popMatrix(); 
+    
+    //Draw plot with labels:
+    textSize(12);
+    stroke(200);
+    strokeWeight(1);
+    for (int i=0; i<7; i++) {
+      float xPos = map(xlabels[i], minPrice, maxPrice, plotX1, plotX2);
+      text(xlabels[i], xPos, plotY2+15);
+      line(xPos, plotY2, xPos, plotY2+3);
+    }
+    for (int i=0; i<6; i++) {
+      float yPos = map(ylabels[i], minPoints, maxPoints, plotY2, plotY1);
+      text(ylabels[i], plotX1-15, yPos);
+      line(plotX1-3, yPos, plotX1, yPos);
+    }
+    noStroke();
+    for (int i=0; i < nGrapes; i++) {
+      float winePoints = wineTable.getFloat(i, "points");
+      float winePrice = wineTable.getFloat(i, "price");
+      float pointX = map(winePrice, minPrice, maxPrice, plotX1, plotX2);
+      float pointY = map(winePoints, minPoints, maxPoints, plotY2, plotY1);
+      ellipse(pointX, pointY, 7, 7);
     }
     
-    
-    
-  }
-  
-  
+    if (currentColour.equals("red")) {
+        fill(178,34,34);
+      } else {
+        stroke(0);
+        strokeWeight(1);
+        fill(255,255,150);
+      }
+      float currentPoints = wineTable.getFloat(currentNumber, "points");
+      float currentPrice = wineTable.getFloat(currentNumber, "price");
+      float currentX = map(currentPrice, minPrice, maxPrice, plotX1, plotX2);
+      float currentY = map(currentPoints, minPoints, maxPoints, plotY2, plotY1);
+      ellipse(currentX, currentY, 15, 15);  
+      noStroke();
+      textFont(f1);
+      text("You've selected " + currentGrape.toUpperCase() + ":", width/2, 35);
+      fill(225);
+      textFont(f1);
+      textSize(20);
+      text("Choose another grape or click the left arrow to return.", width*0.3, plotY2+60);
+      text("Average Rating: " + nf(grapePoints, 2, 1) + "    Average Price: $" + nf(grapePrice, 2, 1), 0.77*width, plotY2+60);
 }
