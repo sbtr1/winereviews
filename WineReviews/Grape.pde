@@ -19,12 +19,10 @@ class Grape {
   void drawGrape() {
     if (wineColour.equals("red")) {
       fill(160,10,10);
-      //fill(178,34,34);
     } else {
-      fill(255,250,205);
-      //fill(255,255,150);
+      fill(255,225,180);
     }
-    strokeWeight(0);
+    noStroke();
     ellipse(x,y,grapeSize,grapeSize);
     if (wineColour.equals("red")) {
       fill(255);

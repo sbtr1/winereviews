@@ -1,20 +1,24 @@
 // Visualization of 130,000 reviews in Wine Enthusiast database
 // Shawn Ban
-// 10 March, 2018
+// 4 April, 2018
+
+//Import Geomap:
+import org.gicentre.geomap.*;
 
 // Initialize variables:
-Table wineTable;  
-Table latLongTable;
+Table wineTable, countryTable;
 String[] wineWords;
-PImage mapImage, rightArrow, leftArrow;  
-
-int nGrapes, currentNumber;
-int bgCount = 0;
+PImage rightArrow, leftArrow;
+GeoMap geoMap;
+color maxRed, maxYellow;
 
 ArrayList <Grape> grapes = new ArrayList<Grape>();
 Grape grape; 
 String currentGrape, currentColour;
 float grapePoints, grapePrice;
+
+int nGrapes, currentNumber;
+int bgCount = 0;
 
 float minCount = MAX_FLOAT;
 float maxCount = MIN_FLOAT;
@@ -25,15 +29,18 @@ PFont f1, f2;
 // Set-up:
 void setup() {
   size(1400,810);
-  mapImage = loadImage("worldCountries.png");
   rightArrow = loadImage("rightarrow.png");
   leftArrow = loadImage("leftarrow.png");
   f1 = loadFont("Futura-Medium-36.vlw"); //Headers
   f2 = loadFont("Futura-Medium-12.vlw"); //Small text
   wineTable = loadTable("wine_clean.csv", "header,csv");
-  latLongTable = loadTable("latlong.csv", "header,csv");
+  countryTable = loadTable("country_by_wine.csv", "header,csv");
   wineWords = loadStrings("words.csv");
   nGrapes = wineTable.getRowCount();
+  geoMap = new GeoMap(width/2+110,80,550,300, this);
+  geoMap.readFile("world");
+  maxRed = color(178, 34, 34);    // Dark red.
+  maxYellow = color(255, 200, 0);    // Dark yellow.
   getMinMax();
 }
 
@@ -46,40 +53,7 @@ void draw() {
 }
 
 //Methods
-//Toggles background:
-void mouseClicked() {
-  
-  if (bgCount == 1) {
-    for (int i=0; i< nGrapes; i++) {
-      if (grapes.get(i).isOver()) {
-        currentGrape = wineTable.getString(i,"variety");
-        currentColour = wineTable.getString(i, "colour");
-        currentNumber = i;
-        grapePoints = wineTable.getFloat(i, "points");
-        grapePrice = wineTable.getFloat(i, "price");
-      } 
-    }
-    if (dist(45,height/2+25, mouseX, mouseY) < 25) {
-      bgCount++;
-    }
-  } else {
-    if (dist(width-75,height/2+25, mouseX, mouseY) < 25) {
-      bgCount++;
-    }
-  }
-  bgCount = bgCount % 2;
-}
 
-//Gets the minimum and maximum for a couple of values:
-void getMinMax() {
-  for (int i=0; i<nGrapes; i++) {
-    minCount = min(minCount,wineTable.getFloat(i,"n"));
-    maxCount = max(maxCount,wineTable.getFloat(i,"n"));
-    for (int j=0; j < 40; j++) {
-      maxRelFreq = max(maxRelFreq,wineTable.getFloat(i,j+19));   
-    }  
-  }
-}
 
 //Draws first background:
 void drawBackgroundOne() {
@@ -104,13 +78,13 @@ void drawBackgroundOne() {
       if (wineColour.equals("red")) {
         fill(160,10,10);
       } else {
-        fill(255,250,205);
+        fill(255,225,180);
       }
       
       for (int j=0; j < 40; j++) {
-        float relFreq = wineTable.getFloat(i, j+19);
+        float relFreq = wineTable.getFloat(i, j+7);
         float pointSize = map(relFreq,0,maxRelFreq,0,200);
-        pointSize = pow(pointSize,0.6);
+        pointSize = pow(pointSize,0.6); //Exponent of 0.6 for perception.
         ellipse(j*27+xstart, 17*i+ystart, pointSize, pointSize);    
       }  
    }
@@ -165,36 +139,39 @@ void drawNavigationBar() {
 }
 
 void drawMap() {
-  image(mapImage,width/2+110,80,550,300); 
-  if (currentGrape != null) {
-    if (currentColour.equals("red")) {
-        fill(178,34,34,80);
-        stroke(180,10,10);
-        strokeWeight(0.5);
+  float maxCountry = MIN_FLOAT;
+  
+  fill(255);   
+  rectMode(CORNERS);
+  noStroke();
+  rect(width/2+110, 80, width-40, 380);
+  stroke(255);
+  strokeWeight(0.2);
+  
+  for (int j=0; j < 12; j++) {
+    maxCountry = max(maxCountry,countryTable.getFloat(j, currentNumber+1));   
+  }      
+  
+  for (int id : geoMap.getFeatures().keySet()) {
+    String countryCode = geoMap.getAttributeTable().findRow(str(id),0).getString("ISO_A3");    
+    TableRow dataRow = countryTable.findRow(countryCode, 0);
+    if (dataRow != null) {
+      float grapeInCountry = log(dataRow.getFloat(currentNumber+1))/log(maxCountry); //Apply log transform to reduce skew.
+      if (currentColour.equals("red")) {
+        fill(lerpColor(color(225), maxRed, grapeInCountry));
+      } else {
+        fill(lerpColor(color(225), maxYellow, grapeInCountry));
+      }
     } else {
-        fill(255,255,150,80);
-        stroke(0);
-        strokeWeight(0.5);
-    }    
-    float maxCountry = MIN_FLOAT;
-    for (int j=4; j < 16; j++) {
-        maxCountry = max(maxCountry,wineTable.getFloat(currentNumber,j));   
-    }     
-    for (int k=0; k < 12; k++) {
-      float wineCount = wineTable.getFloat(currentNumber, k+4);
-      float circleSize = map(wineCount,0,maxCountry,0,200);
-      circleSize = pow(circleSize,0.6);
-      float latitude = latLongTable.getFloat(k, "latitude");
-      float longitude = latLongTable.getFloat(k, "longitude");
-      float x = map(longitude, -180, 180, width/2+110, width/2+660);
-      float y = map(latitude, -60, 85, 380, 80);
-      ellipse(x, y, circleSize, circleSize);
-    } 
-    fill(225);
-    textFont(f1);
-    textSize(20);
-    text("Country of Origin", width*0.78, height*0.5-15);
+      fill(225);
+    }
+    geoMap.draw(id);
   }
+    
+  fill(225);
+  textFont(f1);
+  textSize(20);
+  text("Country of Origin", width*0.78, height*0.5-15);
 }
 
 void drawScatterPlot() {
@@ -208,6 +185,8 @@ void drawScatterPlot() {
     float plotY2 = height-90;
     int[] xlabels = {10, 20, 30, 40, 50, 60, 70};
     int[] ylabels = {86, 87, 88, 89, 90, 91};
+    float regressLineY1 = 87.1;
+    float regressLineY2 = 90.6;
   
     textAlign(CENTER,CENTER);
     fill(255);   
@@ -247,18 +226,28 @@ void drawScatterPlot() {
       ellipse(pointX, pointY, 7, 7);
     }
     
+    stroke(100);
+    strokeWeight(0.5);
+    float lineX1 = map(minPrice, minPrice, maxPrice, plotX1, plotX2);
+    float lineX2 = map(maxPrice, minPrice, maxPrice, plotX1, plotX2);
+    float lineY1 = map(regressLineY1, minPoints, maxPoints, plotY2, plotY1);
+    float lineY2 = map(regressLineY2, minPoints, maxPoints, plotY2, plotY1);
+    line(lineX1, lineY1, lineX2, lineY2);
+    noStroke();
+        
     if (currentColour.equals("red")) {
         fill(178,34,34);
       } else {
         stroke(0);
-        strokeWeight(1);
-        fill(255,255,150);
+        strokeWeight(0.5);
+        fill(255,225,180);
       }
       float currentPoints = wineTable.getFloat(currentNumber, "points");
       float currentPrice = wineTable.getFloat(currentNumber, "price");
       float currentX = map(currentPrice, minPrice, maxPrice, plotX1, plotX2);
       float currentY = map(currentPoints, minPoints, maxPoints, plotY2, plotY1);
       ellipse(currentX, currentY, 15, 15);  
+      
       noStroke();
       textFont(f1);
       text("You've selected " + currentGrape.toUpperCase() + ":", width/2, 35);
@@ -267,4 +256,38 @@ void drawScatterPlot() {
       textSize(20);
       text("Choose another grape or click the left arrow to return.", width*0.3, plotY2+60);
       text("Average Rating: " + nf(grapePoints, 2, 1) + "    Average Price: $" + nf(grapePrice, 2, 1), 0.77*width, plotY2+60);
+}
+
+//Toggles background:
+void mouseClicked() {  
+  if (bgCount == 1) {
+    for (int i=0; i< nGrapes; i++) {
+      if (grapes.get(i).isOver()) {
+        currentGrape = wineTable.getString(i,"variety");
+        currentColour = wineTable.getString(i, "colour");
+        currentNumber = i;
+        grapePoints = wineTable.getFloat(i, "points");
+        grapePrice = wineTable.getFloat(i, "price");
+      } 
+    }
+    if (dist(45,height/2+25, mouseX, mouseY) < 25) {
+      bgCount++;
+    }
+  } else {
+    if (dist(width-75,height/2+25, mouseX, mouseY) < 25) {
+      bgCount++;
+    }
+  }
+  bgCount = bgCount % 2;
+}
+
+//Gets the minimum and maximum for a couple of values:
+void getMinMax() {
+  for (int i=0; i<nGrapes; i++) {
+    minCount = min(minCount,wineTable.getFloat(i,"n"));
+    maxCount = max(maxCount,wineTable.getFloat(i,"n"));
+    for (int j=0; j < 40; j++) {
+      maxRelFreq = max(maxRelFreq,wineTable.getFloat(i,j+7));   
+    }  
+  }
 }
